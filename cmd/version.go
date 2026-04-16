@@ -22,9 +22,18 @@ func SetVersionInfo(version, commit, date string) {
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
-	Run: func(cmd *cobra.Command, args []string) {
-		outputFormat, _ := cmd.Flags().GetString("output")
+	Long: `Print version information.
 
+Use --short to output only the version number (useful for scripting):
+  ptengine-cli version --short   →  0.1.0`,
+	Run: func(cmd *cobra.Command, args []string) {
+		short, _ := cmd.Flags().GetBool("short")
+		if short {
+			fmt.Println(appVersion)
+			return
+		}
+
+		outputFormat, _ := cmd.Flags().GetString("output")
 		info := map[string]string{
 			"version": appVersion,
 			"commit":  appCommit,
@@ -45,5 +54,6 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
+	versionCmd.Flags().Bool("short", false, "Print only the version number")
 	rootCmd.AddCommand(versionCmd)
 }
