@@ -25,22 +25,22 @@ type FilterNamesSchema struct {
 var queryTypes = []QueryTypeInfo{
 	{
 		Name:        "page_metrics",
-		Description: "页面整体指标查询",
+		Description: "Page-level aggregate metrics / 页面整体指标",
 		Metrics:     []string{"visits", "pv", "uv", "newVisitsRate", "entrances", "fvRate", "timeOnPage", "clicks", "clickRate", "ctaClicks", "ctaClickRate", "bounceRate", "avgPageViews", "completions", "conversionRate"},
 	},
 	{
 		Name:        "page_insight",
-		Description: "页面分组洞察（需要 funName 参数）",
+		Description: "Page metrics grouped by dimension (requires funName) / 页面分组洞察",
 		Metrics:     []string{"visits", "pv", "uv", "newVisitsRate", "entrances", "fvRate", "timeOnPage", "clicks", "clickRate", "ctaClicks", "ctaClickRate", "bounceRate", "avgPageViews", "completions", "conversionRate"},
 	},
 	{
 		Name:        "block_metrics",
-		Description: "区块指标（需页面已配置区块）",
+		Description: "Per-block metrics (page must have blocks configured) / 区块指标",
 		Metrics:     []string{"impression", "impressionRate", "dropoff", "dropoffRate", "avgDuration", "completions", "conversionRate"},
 	},
 	{
 		Name:        "element_metrics",
-		Description: "元素指标（需页面已配置元素）",
+		Description: "Per-element metrics (page must have elements configured) / 元素指标",
 		Metrics:     []string{"impression", "impressionRate", "click", "clickRate", "completions", "conversionRate"},
 	},
 }

@@ -1,7 +1,5 @@
 package api
 
-import "encoding/json"
-
 // HeatmapQuery calls POST /open-api/v1/heatmap/query.
 func (c *Client) HeatmapQuery(req *HeatmapQueryRequest) (*CLIResponse, int) {
 	apiResp, rl, err := c.doRequest("/open-api/v1/heatmap/query", req)
@@ -34,18 +32,6 @@ func (c *Client) HeatmapFilterValues(req *FilterValuesRequest) (*CLIResponse, in
 	if apiResp.Code != 200 {
 		cliErr, exitCode := MapAPIError(apiResp.Code, apiResp.Msg)
 		return &CLIResponse{Success: false, Error: cliErr, RateLimit: rl}, exitCode
-	}
-
-	// Wrap the response data array in an object for consistency
-	if apiResp.Data != nil {
-		wrapped := map[string]*json.RawMessage{"values": apiResp.Data}
-		data, _ := json.Marshal(wrapped)
-		raw := json.RawMessage(data)
-		return &CLIResponse{
-			Success:   true,
-			Data:      &raw,
-			RateLimit: rl,
-		}, ExitOK
 	}
 
 	return &CLIResponse{

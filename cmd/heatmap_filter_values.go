@@ -8,26 +8,24 @@ import (
 
 var heatmapFilterValuesCmd = &cobra.Command{
 	Use:   "filter-values",
-	Short: "Get available filter values",
-	Long: `Query available values for a specific filter type.
+	Short: "Get available values for a filter",
+	Long: `Query the Ptengine API for available values of a given filter name.
+Use this to discover what values can be passed in --filter for heatmap query.
 
-Dynamic filter names: os, osVersion, browser, browserVersion, screenResolution,
-deviceBrand, country, region, searchEngine, socialNetwork, socialUrl, aiName,
-referralSource, referralUrl, campaignUrl, utmCampaign, utmSource, utmMedium,
-utmTerm, utmContent, combinedPages, originalPages, conversionName, eventName,
-customDimension, eventVariable.
+Only dynamic filter names are supported (not fixed ones like deviceType/sourceType).
+Run 'ptengine-cli heatmap describe' to see the full list of filter names.
 
-Use 'ptengine-cli heatmap describe' to see all filter names.`,
+Output: JSON envelope {"success":true, "data":[...]} on stdout.`,
 	RunE: runHeatmapFilterValues,
 }
 
 func init() {
 	f := heatmapFilterValuesCmd.Flags()
-	f.String("profile-id", "", "Site profile ID (8-char hex)")
-	f.String("name", "", "Filter name to query values for (required)")
-	f.String("start-date", "", "Start date YYYY-MM-DD (optional)")
-	f.String("end-date", "", "End date YYYY-MM-DD (optional)")
-	f.String("search", "", "Fuzzy search within values (optional)")
+	f.String("profile-id", "", "Site profile ID, 8-char hex (falls back to config file if omitted)")
+	f.String("name", "", "Filter name to query, e.g. country, browser, utmSource (required)")
+	f.String("start-date", "", "Start date in YYYY-MM-DD format")
+	f.String("end-date", "", "End date in YYYY-MM-DD format")
+	f.String("search", "", "Fuzzy search keyword to narrow results")
 
 	heatmapFilterValuesCmd.MarkFlagRequired("name")
 

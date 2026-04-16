@@ -11,16 +11,19 @@ import (
 var heatmapDescribeCmd = &cobra.Command{
 	Use:   "describe",
 	Short: "Show available query types, metrics, filters, and parameters",
-	Long: `Display the API schema for heatmap queries. Useful for discovering
-available parameters before constructing a query.
+	Long: `Display the API schema for heatmap queries (no API key required).
 
-Without flags, shows the full schema. Use --query-type to filter
-to a specific query type's metrics.`,
+Without flags: returns the full schema including all query types, their metrics,
+device types, funName values, filter operators, and filter names.
+
+With --query-type: returns only the metrics available for that query type.
+
+Output: raw JSON object on stdout (not wrapped in the {success, data} envelope).`,
 	RunE: runHeatmapDescribe,
 }
 
 func init() {
-	heatmapDescribeCmd.Flags().String("query-type", "", "Show metrics for a specific query type [page_metrics|page_insight|block_metrics|element_metrics]")
+	heatmapDescribeCmd.Flags().String("query-type", "", "Show metrics for a specific query type: page_metrics | page_insight | block_metrics | element_metrics")
 	heatmapCmd.AddCommand(heatmapDescribeCmd)
 }
 

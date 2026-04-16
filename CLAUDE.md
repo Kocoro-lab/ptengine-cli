@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Repository**: Kocoro-lab/ptengine-cli
 - **API Docs**: https://helps.ptengine.com/cn/developer/open-api
-- **Base URL**: `https://xbackend.ptengine.com/`
+- **Base URL**: `https://xbackend.ptengine.com`
 
 ## Build & Run
 

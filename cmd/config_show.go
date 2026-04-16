@@ -20,11 +20,11 @@ func init() {
 }
 
 func runConfigShow(cmd *cobra.Command, args []string) {
-	// Mask the API key for display
+	// Mask the API key — only show last 4 chars
 	maskedKey := ""
 	if cfg.APIKey != "" {
-		if len(cfg.APIKey) > 8 {
-			maskedKey = cfg.APIKey[:8] + strings.Repeat("*", len(cfg.APIKey)-8)
+		if len(cfg.APIKey) > 4 {
+			maskedKey = strings.Repeat("*", len(cfg.APIKey)-4) + cfg.APIKey[len(cfg.APIKey)-4:]
 		} else {
 			maskedKey = "****"
 		}

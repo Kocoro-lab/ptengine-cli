@@ -48,7 +48,14 @@ func Load(cmd *cobra.Command) (*Config, error) {
 		v.AddConfigPath(configDir)
 		v.SetConfigName("config")
 		v.SetConfigType("yaml")
-		_ = v.ReadInConfig() // ignore if not found
+		if err := v.ReadInConfig(); err != nil {
+			// File not found is expected; other errors (parse, permission) should surface
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				if !os.IsNotExist(err) {
+					return nil, fmt.Errorf("failed to read config file %s: %w", ConfigFilePath(), err)
+				}
+			}
+		}
 	}
 
 	// Env vars

@@ -47,7 +47,7 @@ func (c *Client) doRequest(path string, body interface{}) (*APIResponse, *RateLi
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("POST %s: %w", path, err)
 	}
 	defer resp.Body.Close()
 

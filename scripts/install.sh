@@ -30,6 +30,18 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
+# Check if already installed and up to date
+if command -v "$BINARY_NAME" >/dev/null 2>&1; then
+  CURRENT=$("$BINARY_NAME" version 2>/dev/null | grep -o '"version":"[^"]*"' | cut -d'"' -f4 || echo "")
+  if [ "$CURRENT" = "$VERSION" ]; then
+    echo "${BINARY_NAME} v${VERSION} is already installed and up to date."
+    exit 0
+  fi
+  if [ -n "$CURRENT" ]; then
+    echo "Upgrading ${BINARY_NAME} from v${CURRENT} to v${VERSION}..."
+  fi
+fi
+
 # Download
 ARCHIVE="${BINARY_NAME}_${VERSION}_${OS}_${ARCH}.tar.gz"
 DOWNLOAD_URL="https://github.com/${REPO}/releases/download/v${VERSION}/${ARCHIVE}"
@@ -38,7 +50,10 @@ echo "Downloading ${BINARY_NAME} v${VERSION} for ${OS}/${ARCH}..."
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-curl -fsSL "$DOWNLOAD_URL" -o "${TMP_DIR}/${ARCHIVE}"
+if ! curl -fsSL "$DOWNLOAD_URL" -o "${TMP_DIR}/${ARCHIVE}"; then
+  echo "Error: failed to download ${DOWNLOAD_URL}"
+  exit 1
+fi
 tar xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
 
 # Install
@@ -53,8 +68,12 @@ fi
 
 echo ""
 echo "${BINARY_NAME} v${VERSION} installed to ${INSTALL_DIR}/${BINARY_NAME}"
-echo ""
-echo "Get started:"
-echo "  ${BINARY_NAME} config set --api-key pt-your-api-key"
-echo "  ${BINARY_NAME} heatmap describe"
-echo "  ${BINARY_NAME} heatmap query --help"
+
+# Only show getting-started hints on fresh install
+if [ -z "$CURRENT" ]; then
+  echo ""
+  echo "Get started:"
+  echo "  ${BINARY_NAME} config set --api-key pt-your-api-key"
+  echo "  ${BINARY_NAME} heatmap describe"
+  echo "  ${BINARY_NAME} heatmap query --help"
+fi

@@ -11,24 +11,20 @@ import (
 // PrintSuccess writes a successful CLI response to stdout.
 func PrintSuccess(resp *api.CLIResponse, format string) {
 	switch format {
-	case "json":
-		data, _ := json.Marshal(resp)
-		fmt.Println(string(data))
 	case "json-pretty":
 		data, _ := json.MarshalIndent(resp, "", "  ")
 		fmt.Println(string(data))
 	case "table":
-		// For table format, print a simplified human-readable view
 		if resp.Data != nil {
 			data, _ := json.MarshalIndent(json.RawMessage(*resp.Data), "", "  ")
 			fmt.Println(string(data))
 		}
 		if resp.RateLimit != nil {
-			fmt.Fprintf(os.Stderr, "\n[Rate Limit] minute: %d/%d, day: %d/%d\n",
+			fmt.Fprintf(os.Stderr, "[Rate Limit] minute: %d/%d, day: %d/%d\n",
 				resp.RateLimit.MinuteRemaining, resp.RateLimit.MinuteLimit,
 				resp.RateLimit.DayRemaining, resp.RateLimit.DayLimit)
 		}
-	default:
+	default: // json
 		data, _ := json.Marshal(resp)
 		fmt.Println(string(data))
 	}
@@ -43,10 +39,9 @@ func PrintError(cliErr *api.CLIError, rl *api.RateLimit, format string) int {
 	}
 
 	var data []byte
-	switch format {
-	case "json-pretty":
+	if format == "json-pretty" {
 		data, _ = json.MarshalIndent(resp, "", "  ")
-	default:
+	} else {
 		data, _ = json.Marshal(resp)
 	}
 	fmt.Fprintln(os.Stderr, string(data))
@@ -61,11 +56,10 @@ func PrintError(cliErr *api.CLIError, rl *api.RateLimit, format string) int {
 // PrintJSON writes any value as JSON to stdout.
 func PrintJSON(v interface{}, format string) {
 	var data []byte
-	switch format {
-	case "json-pretty", "table":
-		data, _ = json.MarshalIndent(v, "", "  ")
-	default:
+	if format == "json" {
 		data, _ = json.Marshal(v)
+	} else {
+		data, _ = json.MarshalIndent(v, "", "  ")
 	}
 	fmt.Println(string(data))
 }

@@ -32,7 +32,10 @@ var versionCmd = &cobra.Command{
 		}
 
 		switch outputFormat {
-		case "json", "json-pretty":
+		case "json":
+			data, _ := json.Marshal(info)
+			fmt.Println(string(data))
+		case "json-pretty":
 			data, _ := json.MarshalIndent(info, "", "  ")
 			fmt.Println(string(data))
 		default:
