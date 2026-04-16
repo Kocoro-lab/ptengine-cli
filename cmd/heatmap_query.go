@@ -19,8 +19,8 @@ var heatmapQueryCmd = &cobra.Command{
 Query types:
   page_metrics     Page-level aggregate metrics (pv, uv, bounceRate, etc.)
   page_insight     Same metrics grouped by a dimension (requires --fun-name)
-  block_metrics    Per-block metrics (impression, dropoff, etc.; page must have blocks configured)
-  element_metrics  Per-element metrics (click, impression, etc.; page must have elements configured)
+  block_metrics    Per-block metrics (--device-type must be PC, MOBILE, or TABLET, not ALL)
+  element_metrics  Per-element metrics (--device-type must be PC, MOBILE, or TABLET, not ALL)
 
 Output: JSON envelope {"success":true, "data":{...}, "rate_limit":{...}} on stdout.
 Errors: JSON envelope {"success":false, "error":{...}} on stderr.
@@ -36,7 +36,7 @@ func init() {
 	f.String("url", "", "Target page URL to query (required)")
 	f.String("start-date", "", "Start date in YYYY-MM-DD format (required)")
 	f.String("end-date", "", "End date in YYYY-MM-DD format (required)")
-	f.String("device-type", "ALL", "Device filter: ALL | PC | MOBILE | TABLET")
+	f.String("device-type", "ALL", "Device filter: ALL | PC | MOBILE | TABLET (block_metrics and element_metrics require PC/MOBILE/TABLET, not ALL)")
 	f.StringSlice("metrics", nil, "Metrics to return, comma-separated (omit for all). Run 'heatmap describe --query-type <type>' to list")
 	f.StringSlice("conversion-names", nil, "Conversion goal names, comma-separated (supports fuzzy match)")
 	f.StringArray("filter", nil, "Filter condition, repeatable. Format: 'name include|exclude val1,val2'")

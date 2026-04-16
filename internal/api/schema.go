@@ -35,12 +35,12 @@ var queryTypes = []QueryTypeInfo{
 	},
 	{
 		Name:        "block_metrics",
-		Description: "Per-block metrics (page must have blocks configured) / 区块指标",
+		Description: "Per-block metrics; deviceType must be PC/MOBILE/TABLET, not ALL / 区块指标",
 		Metrics:     []string{"impression", "impressionRate", "dropoff", "dropoffRate", "avgDuration", "completions", "conversionRate"},
 	},
 	{
 		Name:        "element_metrics",
-		Description: "Per-element metrics (page must have elements configured) / 元素指标",
+		Description: "Per-element metrics; deviceType must be PC/MOBILE/TABLET, not ALL / 元素指标",
 		Metrics:     []string{"impression", "impressionRate", "click", "clickRate", "completions", "conversionRate"},
 	},
 }
