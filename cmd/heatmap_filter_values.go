@@ -5,7 +5,6 @@ import (
 	"github.com/Kocoro-lab/ptengine-cli/internal/output"
 	"github.com/spf13/cobra"
 )
-
 var heatmapFilterValuesCmd = &cobra.Command{
 	Use:   "filter-values",
 	Short: "Get available values for a filter",
@@ -34,12 +33,8 @@ func init() {
 
 func runHeatmapFilterValues(cmd *cobra.Command, args []string) error {
 	if cfg.APIKey == "" {
-		cliErr := api.NewValidationError(
-			"API key is required",
-			"Set via --api-key flag, PTENGINE_API_KEY env var, or 'ptengine-cli config set --api-key'.",
-		)
-		exitCode := output.PrintError(cliErr, nil, cfg.Output)
-		return &ExitError{Code: exitCode}
+		return failValidation("API key is required",
+			"Set via --api-key flag, PTENGINE_API_KEY env var, or 'ptengine-cli config set --api-key'.")
 	}
 
 	profileID, _ := cmd.Flags().GetString("profile-id")
@@ -52,12 +47,8 @@ func runHeatmapFilterValues(cmd *cobra.Command, args []string) error {
 		profileID = cfg.ProfileID
 	}
 	if profileID == "" {
-		cliErr := api.NewValidationError(
-			"profile-id is required",
-			"Set via --profile-id flag or 'ptengine-cli config set --profile-id'.",
-		)
-		exitCode := output.PrintError(cliErr, nil, cfg.Output)
-		return &ExitError{Code: exitCode}
+		return failValidation("profile-id is required",
+			"Set via --profile-id flag or 'ptengine-cli config set --profile-id'.")
 	}
 
 	req := &api.FilterValuesRequest{
@@ -70,12 +61,9 @@ func runHeatmapFilterValues(cmd *cobra.Command, args []string) error {
 
 	client := api.NewClient(cfg.BaseURL, cfg.APIKey)
 	resp, exitCode := client.HeatmapFilterValues(req)
-
-	if resp.Success {
-		output.PrintSuccess(resp, cfg.Output)
-		return nil
+	output.PrintEnvelope(resp, cfg.Output)
+	if exitCode != api.ExitOK {
+		return &ExitError{Code: exitCode}
 	}
-
-	output.PrintError(resp.Error, resp.RateLimit, cfg.Output)
-	return &ExitError{Code: exitCode}
+	return nil
 }

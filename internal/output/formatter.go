@@ -53,6 +53,21 @@ func PrintError(cliErr *api.CLIError, rl *api.RateLimit, format string) int {
 	return api.ExitValidation
 }
 
+// PrintEnvelope dispatches based on resp.Success / resp.Error:
+//   - success=true        -> stdout via PrintSuccess
+//   - success=false, Error=nil (e.g., cancel 4040 'not_found') -> stdout, envelope preserved
+//   - success=false, Error!=nil -> stderr via PrintError
+func PrintEnvelope(resp *api.CLIResponse, format string) {
+	if resp == nil {
+		return
+	}
+	if resp.Success || resp.Error == nil {
+		PrintSuccess(resp, format)
+		return
+	}
+	PrintError(resp.Error, resp.RateLimit, format)
+}
+
 // PrintJSON writes any value as JSON to stdout.
 func PrintJSON(v interface{}, format string) {
 	var data []byte

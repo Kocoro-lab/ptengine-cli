@@ -53,12 +53,8 @@ func init() {
 
 func runHeatmapQuery(cmd *cobra.Command, args []string) error {
 	if cfg.APIKey == "" {
-		cliErr := api.NewValidationError(
-			"API key is required",
-			"Set via --api-key flag, PTENGINE_API_KEY env var, or 'ptengine-cli config set --api-key'.",
-		)
-		exitCode := output.PrintError(cliErr, nil, cfg.Output)
-		return &ExitError{Code: exitCode}
+		return failValidation("API key is required",
+			"Set via --api-key flag, PTENGINE_API_KEY env var, or 'ptengine-cli config set --api-key'.")
 	}
 
 	queryType, _ := cmd.Flags().GetString("query-type")
@@ -73,51 +69,30 @@ func runHeatmapQuery(cmd *cobra.Command, args []string) error {
 	filterJSON, _ := cmd.Flags().GetString("filter-json")
 	funName, _ := cmd.Flags().GetString("fun-name")
 
-	// Use profile-id from config if not provided via flag
 	if profileID == "" {
 		profileID = cfg.ProfileID
 	}
 	if profileID == "" {
-		cliErr := api.NewValidationError(
-			"profile-id is required",
-			"Set via --profile-id flag or 'ptengine-cli config set --profile-id'.",
-		)
-		exitCode := output.PrintError(cliErr, nil, cfg.Output)
-		return &ExitError{Code: exitCode}
+		return failValidation("profile-id is required",
+			"Set via --profile-id flag or 'ptengine-cli config set --profile-id'.")
 	}
-
 	if !slices.Contains(api.ValidQueryTypes, queryType) {
-		cliErr := api.NewValidationError(
-			fmt.Sprintf("invalid query-type: %q", queryType),
-			"Valid values: page_metrics, page_insight, block_metrics, element_metrics.",
-		)
-		exitCode := output.PrintError(cliErr, nil, cfg.Output)
-		return &ExitError{Code: exitCode}
+		return failValidation(fmt.Sprintf("invalid query-type: %q", queryType),
+			"Valid values: page_metrics, page_insight, block_metrics, element_metrics.")
 	}
-
 	if !slices.Contains(api.ValidDeviceTypes, deviceType) {
-		cliErr := api.NewValidationError(
-			fmt.Sprintf("invalid device-type: %q", deviceType),
-			"Valid values: ALL, PC, MOBILE, TABLET.",
-		)
-		exitCode := output.PrintError(cliErr, nil, cfg.Output)
-		return &ExitError{Code: exitCode}
+		return failValidation(fmt.Sprintf("invalid device-type: %q", deviceType),
+			"Valid values: ALL, PC, MOBILE, TABLET.")
 	}
-
 	if queryType == "page_insight" && funName == "" {
-		cliErr := api.NewValidationError(
-			"--fun-name is required when query-type is page_insight",
-			fmt.Sprintf("Valid values: %s.", strings.Join(api.ValidFunNames, ", ")),
-		)
-		exitCode := output.PrintError(cliErr, nil, cfg.Output)
-		return &ExitError{Code: exitCode}
+		return failValidation("--fun-name is required when query-type is page_insight",
+			fmt.Sprintf("Valid values: %s.", strings.Join(api.ValidFunNames, ", ")))
 	}
 
 	filters, err := parseFilters(filterStrs, filterJSON)
 	if err != nil {
-		cliErr := api.NewValidationError(err.Error(), "Filter format: 'name include|exclude val1,val2'. Or use --filter-json for raw JSON array.")
-		exitCode := output.PrintError(cliErr, nil, cfg.Output)
-		return &ExitError{Code: exitCode}
+		return failValidation(err.Error(),
+			"Filter format: 'name include|exclude val1,val2'. Or use --filter-json for raw JSON array.")
 	}
 
 	req := &api.HeatmapQueryRequest{
@@ -135,14 +110,11 @@ func runHeatmapQuery(cmd *cobra.Command, args []string) error {
 
 	client := api.NewClient(cfg.BaseURL, cfg.APIKey)
 	resp, exitCode := client.HeatmapQuery(req)
-
-	if resp.Success {
-		output.PrintSuccess(resp, cfg.Output)
-		return nil
+	output.PrintEnvelope(resp, cfg.Output)
+	if exitCode != api.ExitOK {
+		return &ExitError{Code: exitCode}
 	}
-
-	output.PrintError(resp.Error, resp.RateLimit, cfg.Output)
-	return &ExitError{Code: exitCode}
+	return nil
 }
 
 // parseFilters handles both --filter string syntax and --filter-json.

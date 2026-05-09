@@ -11,25 +11,42 @@ import (
 )
 
 // Client is the HTTP client for the Ptengine API.
+//
+// HTTPClient is for one-shot request/response calls (heatmap, data-query/query,
+// data-query/cancel). StreamClient is for long-lived SSE responses (data-query/stream)
+// where the wall-clock duration is bounded by the server, not the client.
 type Client struct {
-	BaseURL    string
-	APIKey     string
-	HTTPClient *http.Client
+	BaseURL      string
+	APIKey       string
+	HTTPClient   *http.Client
+	StreamClient *http.Client
 }
 
 // NewClient creates a new API client.
+//
+// HTTPClient timeout is 120s — covers heatmap (~1s) and data-query/query
+// (worst-case ~25s LLM inference + network jitter) with safe margin.
+// StreamClient has no timeout; the server controls SSE duration.
 func NewClient(baseURL, apiKey string) *Client {
 	return &Client{
-		BaseURL: baseURL,
-		APIKey:  apiKey,
-		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		BaseURL:      baseURL,
+		APIKey:       apiKey,
+		HTTPClient:   &http.Client{Timeout: 120 * time.Second},
+		StreamClient: &http.Client{},
 	}
 }
 
+// reservedHeaders are set by doRequest from Client fields and must not be
+// overridden by per-call extra headers (would break auth or content negotiation).
+var reservedHeaders = map[string]struct{}{
+	"Content-Type": {},
+	"X-Api-Key":    {},
+	"User-Agent":   {},
+}
+
 // doRequest sends a POST request and returns the parsed response, rate limit info, and any error.
-func (c *Client) doRequest(path string, body interface{}) (*APIResponse, *RateLimit, error) {
+// Optional extra headers (e.g., X-Request-Id) can be passed; later headers override earlier ones.
+func (c *Client) doRequest(path string, body interface{}, extraHeaders ...http.Header) (*APIResponse, *RateLimit, error) {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -44,6 +61,16 @@ func (c *Client) doRequest(path string, body interface{}) (*APIResponse, *RateLi
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", c.APIKey)
 	req.Header.Set("User-Agent", "ptengine-cli")
+	for _, h := range extraHeaders {
+		for k, vv := range h {
+			if _, reserved := reservedHeaders[http.CanonicalHeaderKey(k)]; reserved {
+				continue
+			}
+			for _, v := range vv {
+				req.Header.Set(k, v)
+			}
+		}
+	}
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {

@@ -28,18 +28,24 @@ git tag v0.1.0 && git push origin v0.1.0
 ```
 main.go                     → Entry point, version ldflags, calls cmd.Execute()
 cmd/                        → Cobra command definitions
-  root.go                   → Global flags (--api-key, --output, --base-url), ExitError type, config loading
-  heatmap_query.go          → Core command: wraps POST /open-api/v1/heatmap/query
+  root.go                   → Global flags (--api-key, --output, --base-url), ExitError, failValidation/parseJSONObject helpers
+  heatmap.go                → Parent for heatmap subcommands
+  heatmap_query.go          → Wraps POST /open-api/v1/heatmap/query
   heatmap_filter_values.go  → Wraps POST /open-api/v1/heatmap/filter-values
   heatmap_describe.go       → Local-only: outputs static schema JSON (no API call)
+  data_query.go             → Parent for data-query subcommands
+  data_query_query.go       → Wraps POST /open-api/v1/data-query/query (sync NL query)
+  data_query_stream.go      → Wraps POST /open-api/v1/data-query/stream (SSE, one JSON line per event)
+  data_query_cancel.go      → Wraps POST /open-api/v1/data-query/{traceId}/cancel
   config_set.go / config_show.go → Persistent config management
 internal/api/
-  client.go                 → HTTP client with auth header, rate-limit header parsing
-  types.go                  → Request/response structs, CLIResponse envelope, CLIError
-  schema.go                 → Static parameter definitions (metrics, filters, funName per query type)
-  errors.go                 → API error code → exit code + human hint mapping
+  client.go                 → HTTP client; doRequest takes optional extra http.Header (e.g., X-Request-Id)
+  types.go                  → Heatmap request/response structs, CLIResponse envelope, CLIError
+  data_query.go             → DataQueryRequest type + Client.DataQueryQuery/Stream/Cancel methods
+  schema.go                 → Static parameter definitions (heatmap metrics, filters, funName)
+  errors.go                 → API error code → exit code + hint; MapHTTPStatus for stream pre-SSE errors
 internal/config/            → Viper: flag > PTENGINE_API_KEY env > ~/.config/ptengine-cli/config.yaml
-internal/output/            → PrintSuccess (stdout), PrintError (stderr), PrintJSON formatters
+internal/output/            → PrintSuccess (stdout), PrintError (stderr), PrintEnvelope (dispatch), PrintJSON
 ```
 
 ## Key Design Patterns
@@ -59,5 +65,15 @@ internal/output/            → PrintSuccess (stdout), PrintError (stderr), Prin
 
 - **API Docs**: https://helps.ptengine.com/cn/developer/open-api
 - **Base URL**: `https://xbackend.ptengine.com`
-- Auth: `x-api-key` header
-- Two endpoints: `/open-api/v1/heatmap/query` (4 query types) and `/open-api/v1/heatmap/filter-values`
+- Auth: `x-api-key` header (same key for all endpoints)
+
+Heatmap endpoints (固定字段查询):
+- `/open-api/v1/heatmap/query` (4 query types: page_metrics / page_insight / block_metrics / element_metrics)
+- `/open-api/v1/heatmap/filter-values`
+
+Data-query endpoints (自然语言查询 → SQL → 行数据):
+- `/open-api/v1/data-query/query` — sync NL query, returns full envelope after backend completes (~3-25s)
+- `/open-api/v1/data-query/stream` — SSE stream of phase events (`routed` / `handler` / `final` / `cancelled` / `error`); the `final` event payload matches the sync envelope. CLI emits one JSON line per event to stdout.
+- `/open-api/v1/data-query/{traceId}/cancel` — abort an in-flight query; pass the `--request-id` you sent earlier or the `trace_id` from the `routed` event. 404 is treated as ExitOK with `success=false` (already finished).
+- Both query/stream support a `scenario` mode: `user_overview` / `user_timeline` / `user_session_detail` / `user_benchmark` with `--params '{"userId":"..."}'`.
+- Successful response carries `data.message`: `"OK"` (rows ready) or `"CLARIFICATION_NEEDED"` (multi-turn — caller passes the user's choice back via `--context`).

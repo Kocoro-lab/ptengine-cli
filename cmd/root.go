@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
+	"github.com/Kocoro-lab/ptengine-cli/internal/api"
 	"github.com/Kocoro-lab/ptengine-cli/internal/config"
+	"github.com/Kocoro-lab/ptengine-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -61,4 +64,23 @@ func Execute() error {
 	// Cobra framework errors (flag validation, etc.)
 	fmt.Fprintln(os.Stderr, err)
 	return &ExitError{Code: 1}
+}
+
+// failValidation prints a validation-class CLI error to stderr and returns
+// an *ExitError carrying the appropriate exit code. Used by RunE handlers to
+// short-circuit on caller-side flag/argument errors.
+func failValidation(msg, hint string) error {
+	cliErr := api.NewValidationError(msg, hint)
+	exitCode := output.PrintError(cliErr, nil, cfg.Output)
+	return &ExitError{Code: exitCode}
+}
+
+// parseJSONObject parses a JSON-object literal flag value into a map.
+// Used by --params on data-query subcommands.
+func parseJSONObject(s string) (map[string]interface{}, error) {
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(s), &m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
